@@ -31,9 +31,9 @@ def colour(hc, vc, t):
     if 16 <= cy <= 47:                                        # four tiers of eight rows
         hw = 1 + 2 * ((cy - 16) // 8) + cy % 8
         in_tree, edge = dx <= hw, dx == hw
-    if 10 <= cy <= 15:                                        # diamond star around row 13
-        sdy = abs(cy - 13)
-        if dx + sdy <= 3:
+    if 12 <= cy <= 15:                                        # small diamond star on rows 12..15
+        sdy = 0 if cy in (13, 14) else 1
+        if dx + sdy <= 1:
             return [0b100000, 0b110000, 0b111100, 0b110100][(t >> 4) & 3]
     if in_tree and not edge and ((cx ^ cy) & 1) and (((cx >> 1) ^ (cy >> 1)) & 1):   # light
         lc = (((cx >> 2) & 1) << 1 | ((cy >> 2) & 1)) ^ ((t >> 4) & 3)
@@ -53,6 +53,9 @@ def colour(hc, vc, t):
                 ch = TEXT[1 + o // 4]
                 if ch != " " and GLYPHS[ch][cy - 53][o % 4] == "#":
                     return RED
+        return WHITE
+    ph = ((cx >> 3) & 0xF) ^ ((((cx >> 3) & 3) << 2) | ((cx >> 5) & 3))
+    if (cx & 3) == 1 and not (hc & 4) and not (vc & 4) and (((cy & 0xF) + ph) & 0xF) == ((t >> 2) & 0xF):
         return WHITE
     return 0b000001
 
