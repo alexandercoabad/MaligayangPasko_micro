@@ -11,9 +11,8 @@
  *   - a star on top that blinks through four colours, a four-tier fir tree
  *     with darker edges, striped needles and colour-cycling lights, a trunk
  *     and a snow-covered ground
+ *   - snow falling in the night sky
  *   - "MALIGAYANG PASKO!" in red on the snow, a 3x5-cell font of 12 glyphs
- * The 8-pixel cells and the 3x5 font keep the logic inside the micro tile; the
- * falling snow of the earlier micro version was dropped to make room for the text.
  */
 
 `default_nettype none
@@ -25,7 +24,7 @@ module tt_um_XmasTree_MaligayangPasko (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-  wire pause = ui_in[0];        // freeze the animation (lights and star)
+  wire pause = ui_in[0];        // freeze the animation (snow, lights, and star)
 
   // ---------------------------------------------------------------- timing
   // H: 640 visible, 16 front porch, 96 sync, 48 back porch = 800
@@ -57,7 +56,7 @@ module tt_um_XmasTree_MaligayangPasko (
                 ~(vc[9] | (&vc[8:5]));                        // vc < 480
 
   // ------------------------------------------------------------------ grid
-  // 80 x 60 cells of 8 pixels.  Rows: 11..15 star, 16..47 tree (4 tiers of 8 rows),
+  // 80 x 60 cells of 8 pixels.  Rows: 12..15 star, 16..47 tree (4 tiers of 8 rows),
   // 48..51 trunk, 52..59 snow on the ground; the sky is above and beside the tree.
   wire [6:0] cx = hc[9:3];
   wire [5:0] cy = vc[8:3];
@@ -69,7 +68,7 @@ module tt_um_XmasTree_MaligayangPasko (
 
   // tree: half-width in cells = 1 + 2 * tier + row in tier, tier = cy[5:3] - 2, so the next
   // tier starts two cells narrower than the last row of the one above (the "skirts")
-  wire [3:0] hw      = {cy[5:3], 1'b0} - 4'd3 + {1'b0, r};
+  wire [3:0] hw       = {cy[5:3], 1'b0} - 4'd3 + {1'b0, r};
   wire       tree_row = cy[5] ^ cy[4];                   // rows 16..47
   wire       in_tree  = tree_row & (dx <= {2'b00, hw});
   wire       edge_c   = in_tree & (dx == {2'b00, hw});
@@ -77,10 +76,10 @@ module tt_um_XmasTree_MaligayangPasko (
   wire trunk  = (cy[5:2] == 4'b1100) & (dx[5:1] == 5'd0);   // rows 48..51, four cells wide
   wire ground = cy[5] & cy[4] & (cy[3] | cy[2]);            // rows 52..59
 
-  // star: a diamond of cells around row 13 that blinks and cycles through four colours
-  wire [2:0] sdy  = (cy[3:0] >= 4'd13) ? cy[2:0] - 3'd5 : 3'd5 - cy[2:0];
-  wire       star = (cy[5:4] == 2'b00) & (cy[3:0] >= 4'd10) & (cy[3:0] <= 4'd15) &
-                    ({3'b000, sdy} + dx <= 6'd3);
+  // star: a small diamond of cells around row 13/14 that blinks and cycles through four colours
+  wire [2:0] sdy  = (cy[3:0] >= 4'd14) ? cy[2:0] - 3'd6 : 3'd5 - cy[2:0];
+  wire       star = (cy[5:4] == 2'b00) & (cy[3:0] >= 4'd12) & (cy[3:0] <= 4'd15) &
+                    ({3'b000, sdy} + dx <= 6'd1);
 
   // "MALIGAYANG PASKO!": 17 characters, rows 53..57.  The M is 5 cells wide (columns 4..8, a
   // 3-wide M looks like an H); the other 16 characters are 3 cells wide at a pitch of 4 from column 10.
@@ -135,6 +134,10 @@ module tt_um_XmasTree_MaligayangPasko (
   wire light = in_tree & ~edge_c & (cx[0] ^ cy[0]) & (cx[1] ^ cy[1]);
   wire [1:0] lc = {cx[2], cy[2]} ^ t[5:4];
 
+  // falling snow: a 4x4 pixel flake in every fourth 8-pixel column, each column with its own phase
+  wire [3:0] ph    = cx[6:3] ^ {cx[4:3], cx[6:5]};
+  wire       flake = (cx[1:0] == 2'b01) & ~hc[2] & ~vc[2] & ((vc[6:3] + ph) == t[5:2]);
+
   // ----------------------------------------------------------------- colour
   reg [5:0] rgb;                // {R1 R0 G1 G0 B1 B0}
   always @* begin
@@ -154,6 +157,7 @@ module tt_um_XmasTree_MaligayangPasko (
     else if (trunk)   rgb = 6'b10_01_00;
     else if (text)    rgb = 6'b11_00_00;
     else if (ground)  rgb = 6'b11_11_11;
+    else if (flake)   rgb = 6'b11_11_11;
     else              rgb = 6'b00_00_01;
   end
 
