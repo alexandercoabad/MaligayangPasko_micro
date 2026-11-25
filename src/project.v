@@ -76,10 +76,8 @@ module tt_um_XmasTree_MaligayangPasko (
   wire trunk  = (cy[5:2] == 4'b1100) & (dx[5:1] == 5'd0);   // rows 48..51, four cells wide
   wire ground = cy[5] & cy[4] & (cy[3] | cy[2]);            // rows 52..59
 
-  // star: a small diamond of cells around row 13/14 that blinks and cycles through four colours
-  wire [2:0] sdy  = (cy[3:0] >= 4'd14) ? cy[2:0] - 3'd6 : 3'd5 - cy[2:0];
-  wire       star = (cy[5:4] == 2'b00) & (cy[3:0] >= 4'd12) & (cy[3:0] <= 4'd15) &
-                    ({3'b000, sdy} + dx <= 6'd1);
+  // star: a small diamond of cells on rows 12..15 that blinks and cycles through four colours
+  wire star = (cy[5:2] == 4'b0011) & (dx[5:1] == 5'd0) & (~dx[0] | (cy[1] ^ cy[0]));
 
   // "MALIGAYANG PASKO!": 17 characters, rows 53..57.  The M is 5 cells wide (columns 4..8, a
   // 3-wide M looks like an H); the other 16 characters are 3 cells wide at a pitch of 4 from column 10.
