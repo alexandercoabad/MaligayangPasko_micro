@@ -1,27 +1,169 @@
 /*
- * Copyright (c) 2024 Your Name
+ * Copyright (c) 2026 Alexander Co Abad
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Maligayang Pasko - a pixel-art Christmas tree on VGA, for the Tiny Tapeout
+ * micro tile (clk, rst_n, ui_in, uo_out only).
+ *
+ * 640x480 at 60 Hz from a 25.175 MHz clock, 2 bits per colour on the TinyVGA
+ * Pmod pinout.  The picture is an 80 x 60 grid of 8-pixel cells drawn with
+ * combinational logic only, no frame buffer:
+ *   - a star on top that blinks through four colours, a four-tier fir tree
+ *     with darker edges, striped needles and colour-cycling lights, a trunk
+ *     and a snow-covered ground
+ *   - "MALIGAYANG PASKO!" in red on the snow, a 3x5-cell font of 12 glyphs
+ * The 8-pixel cells and the 3x5 font keep the logic inside the micro tile; the
+ * falling snow of the earlier micro version was dropped to make room for the text.
  */
 
 `default_nettype none
 
-module tt_um_example (
+module tt_um_XmasTree_MaligayangPasko (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
-    input  wire [7:0] uio_in,   // IOs: Input path
-    output wire [7:0] uio_out,  // IOs: Output path
-    output wire [7:0] uio_oe,   // IOs: Enable path (active high: 0=input, 1=output)
-    input  wire       ena,      // always 1 when the design is powered, so you can ignore it
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
 );
 
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  assign uio_out = 0;
-  assign uio_oe  = 0;
+  wire pause = ui_in[0];        // freeze the animation (lights and star)
 
-  // List all unused inputs to prevent warnings
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+  // ---------------------------------------------------------------- timing
+  // H: 640 visible, 16 front porch, 96 sync, 48 back porch = 800
+  // V: 480 visible, 10 front porch,  2 sync, 33 back porch = 525
+  reg [9:0] hc;
+  reg [9:0] vc;
+  reg [5:0] t;                  // frame counter
+
+  wire h_end = (hc == 10'd799);
+  wire v_end = (vc == 10'd524);
+
+  always @(posedge clk) begin
+    if (!rst_n) begin
+      hc <= 10'd0;
+      vc <= 10'd0;
+      t  <= 6'd0;
+    end else begin
+      hc <= h_end ? 10'd0 : hc + 10'd1;
+      if (h_end) begin
+        vc <= v_end ? 10'd0 : vc + 10'd1;
+        if (v_end && !pause) t <= t + 6'd1;
+      end
+    end
+  end
+
+  wire hs_n   = ~((hc[9:4] >= 6'd41) && (hc[9:4] < 6'd47));   // 656 .. 751
+  wire vs_n   = ~(vc[9:1] == 9'd245);                         // 490, 491
+  wire active = ~(hc[9] & (hc[8] | hc[7])) &                  // hc < 640
+                ~(vc[9] | (&vc[8:5]));                        // vc < 480
+
+  // ------------------------------------------------------------------ grid
+  // 80 x 60 cells of 8 pixels.  Rows: 11..15 star, 16..47 tree (4 tiers of 8 rows),
+  // 48..51 trunk, 52..59 snow on the ground; the sky is above and beside the tree.
+  wire [6:0] cx = hc[9:3];
+  wire [5:0] cy = vc[8:3];
+  wire [2:0] r  = cy[2:0];                 // row inside a tier
+
+  // distance from the centre line (between columns 39 and 40)
+  wire [6:0] u  = cx - 7'd40;
+  wire [5:0] dx = u[6] ? ~u[5:0] : u[5:0];
+
+  // tree: half-width in cells = 1 + 2 * tier + row in tier, tier = cy[5:3] - 2, so the next
+  // tier starts two cells narrower than the last row of the one above (the "skirts")
+  wire [3:0] hw      = {cy[5:3], 1'b0} - 4'd3 + {1'b0, r};
+  wire       tree_row = cy[5] ^ cy[4];                   // rows 16..47
+  wire       in_tree  = tree_row & (dx <= {2'b00, hw});
+  wire       edge_c   = in_tree & (dx == {2'b00, hw});
+
+  wire trunk  = (cy[5:2] == 4'b1100) & (dx[5:1] == 5'd0);   // rows 48..51, four cells wide
+  wire ground = cy[5] & cy[4] & (cy[3] | cy[2]);            // rows 52..59
+
+  // star: a diamond of cells around row 13 that blinks and cycles through four colours
+  wire [2:0] sdy  = (cy[3:0] >= 4'd13) ? cy[2:0] - 3'd5 : 3'd5 - cy[2:0];
+  wire       star = (cy[5:4] == 2'b00) & (cy[3:0] >= 4'd10) & (cy[3:0] <= 4'd15) &
+                    ({3'b000, sdy} + dx <= 6'd3);
+
+  // "MALIGAYANG PASKO!": 17 characters, rows 53..57.  The M is 5 cells wide (columns 4..8, a
+  // 3-wide M looks like an H); the other 16 characters are 3 cells wide at a pitch of 4 from column 10.
+  wire [6:0] o    = cx - 7'd10;
+  wire [3:0] ci   = o[5:2];                // character 1..16 of the text, 0..15 here
+  wire [1:0] ccol = o[1:0];                // 0..2 (3 is the gap)
+  wire [2:0] crow = cy[2:0];               // glyph rows are 53..57 (crow 5, 6, 7, 0, 1)
+  reg  [3:0] gid;
+  always @* begin
+    case (ci)
+      4'd0: gid = 4'd1;  4'd1: gid = 4'd2;  4'd2: gid = 4'd3;  4'd3: gid = 4'd4;  4'd4: gid = 4'd1;
+      4'd5: gid = 4'd5;  4'd6: gid = 4'd1;  4'd7: gid = 4'd6;  4'd8: gid = 4'd4;
+      4'd10: gid = 4'd7; 4'd11: gid = 4'd1; 4'd12: gid = 4'd8; 4'd13: gid = 4'd9; 4'd14: gid = 4'd10;
+      4'd15: gid = 4'd11;
+      default: gid = 4'd15;                // blank
+    endcase
+  end
+  reg [14:0] gl;
+  always @* begin
+    case (gid)
+      4'd1:  gl = 15'b111_101_111_101_101;   // A
+      4'd2:  gl = 15'b100_100_100_100_111;   // L
+      4'd3:  gl = 15'b111_010_010_010_111;   // I
+      4'd4:  gl = 15'b111_100_101_101_111;   // G
+      4'd5:  gl = 15'b101_101_111_010_010;   // Y
+      4'd6:  gl = 15'b111_101_101_101_101;   // N
+      4'd7:  gl = 15'b111_101_111_100_100;   // P
+      4'd8:  gl = 15'b111_100_111_001_111;   // S
+      4'd9:  gl = 15'b101_101_110_101_101;   // K
+      4'd10: gl = 15'b111_101_101_101_111;   // O
+      4'd11: gl = 15'b010_010_010_000_010;   // !
+      default: gl = 15'b000_000_000_000_000;
+    endcase
+  end
+  reg [2:0] gr;
+  reg [4:0] mr;                            // the M, 5 cells wide
+  always @* begin
+    case (crow)
+      3'd5: begin gr = gl[14:12]; mr = 5'b10001; end  // rows 53, 54, 55
+      3'd6: begin gr = gl[11:9];  mr = 5'b11011; end
+      3'd7: begin gr = gl[8:6];   mr = 5'b10101; end
+      3'd0: begin gr = gl[5:3];   mr = 5'b10001; end  // rows 56, 57
+      3'd1: begin gr = gl[2:0];   mr = 5'b10001; end
+      default: begin gr = 3'b000; mr = 5'b00000; end
+    endcase
+  end
+  wire [2:0] mcol = {~cx[2], cx[1:0]};     // columns 4..8 -> 0..4
+  wire m_area = (cx >= 7'd4) & (cx <= 7'd8);
+  wire text = ground & ((m_area & mr[3'd4 - mcol]) | ((o < 7'd64) & (ccol != 2'd3) & gr[2'd2 - ccol]));
+
+  // lights: every fourth cell inside the tree, the colour cycles with the frame count
+  wire light = in_tree & ~edge_c & (cx[0] ^ cy[0]) & (cx[1] ^ cy[1]);
+  wire [1:0] lc = {cx[2], cy[2]} ^ t[5:4];
+
+  // ----------------------------------------------------------------- colour
+  reg [5:0] rgb;                // {R1 R0 G1 G0 B1 B0}
+  always @* begin
+    if (star) begin
+      case (t[5:4])
+        2'd0:    rgb = 6'b10_00_00;     // dark red (almost off)
+        2'd1:    rgb = 6'b11_00_00;     // red
+        2'd2:    rgb = 6'b11_11_00;     // yellow
+        default: rgb = 6'b11_01_00;     // orange
+      endcase
+    end
+    else if (light)   rgb = (lc == 2'd0) ? 6'b11_00_00 :
+                            (lc == 2'd1) ? 6'b11_11_00 :
+                            (lc == 2'd2) ? 6'b11_11_11 : 6'b00_11_11;
+    else if (edge_c)  rgb = 6'b00_01_00;
+    else if (in_tree) rgb = cy[0] ? 6'b00_11_00 : 6'b00_10_00;
+    else if (trunk)   rgb = 6'b10_01_00;
+    else if (text)    rgb = 6'b11_00_00;
+    else if (ground)  rgb = 6'b11_11_11;
+    else              rgb = 6'b00_00_01;
+  end
+
+  // ---------------------------------------------------------------- output
+  // TinyVGA Pmod: uo[0]=R1 [1]=G1 [2]=B1 [3]=VS [4]=R0 [5]=G0 [6]=B0 [7]=HS
+  reg [7:0] out;
+  always @(posedge clk) begin
+    out <= {hs_n, active ? {rgb[0], rgb[2], rgb[4]} : 3'b000,
+            vs_n, active ? {rgb[1], rgb[3], rgb[5]} : 3'b000};
+  end
+  assign uo_out = out;
 
 endmodule
