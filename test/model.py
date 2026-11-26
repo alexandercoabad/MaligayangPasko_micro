@@ -12,7 +12,7 @@ GLYPHS = {  # 3x5 cells, one string per row
     "O": ["###", "#.#", "#.#", "#.#", "###"], "!": [".#.", ".#.", ".#.", "...", ".#."],
 }
 M5 = ["#...#", "##.##", "#.#.#", "#...#", "#...#"]    # the M is 5 cells wide, columns 4..8
-TEXT = "MALIGAYANG PASKO!"          # 17 characters, rows 53..57; the other 16 at pitch 4 from column 10
+TEXT = "MALIGAYANG PASKO!"          # 17 characters, rows 53..57; the other 16 at pitch 4 from column 12
 
 RED, YELLOW, WHITE, CYAN = 0b110000, 0b111100, 0b111111, 0b001111
 LIGHTS = [RED, YELLOW, WHITE, CYAN]
@@ -48,14 +48,14 @@ def colour(hc, vc, t):
         if 53 <= cy <= 57:
             if 4 <= cx <= 8 and M5[cy - 53][cx - 4] == "#":
                 return RED
-            o = cx - 10
+            o = cx - 12
             if 0 <= o < 64 and o % 4 < 3:
                 ch = TEXT[1 + o // 4]
                 if ch != " " and GLYPHS[ch][cy - 53][o % 4] == "#":
                     return RED
         return WHITE
     ph = ((cx >> 3) & 0xF) ^ ((((cx >> 3) & 3) << 2) | ((cx >> 5) & 3))
-    if (cx & 3) == 1 and not (hc & 4) and not (vc & 4) and (((cy & 0xF) + ph) & 0xF) == ((t >> 2) & 0xF):
+    if (cx & 3) == 1 and not (hc & 4) and not (vc & 4) and (((cy & 0xF) ^ ph) == ((t >> 2) & 0xF)):
         return WHITE
     return 0b000001
 
