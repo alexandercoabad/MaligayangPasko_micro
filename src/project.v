@@ -72,14 +72,15 @@ module tt_um_XmasTree_MaligayangPasko (
   wire       in_tree  = tree_row & (dx <= {2'b00, hw});
   wire       edge_c   = in_tree & (dx == {2'b00, hw});
 
-  wire trunk  = (cy[5:2] == 4'b1100) & (dx[5:1] == 5'd0);   // rows 48..51, four cells wide
-  wire ground = cy[5] & cy[4] & (cy[3] | cy[2]);            // rows 52..59
+  wire center2 = (dx[5:1] == 5'd0);                      // columns 38..41
+  wire trunk   = (cy[5:2] == 4'b1100) & center2;         // rows 48..51, four cells wide
+  wire ground  = cy[5] & cy[4] & (cy[3] | cy[2]);        // rows 52..59
 
   // star: a small diamond of cells on rows 12..15 that blinks and cycles through four colours
-  wire star = (cy[5:2] == 4'b0011) & (dx[5:1] == 5'd0) & (~dx[0] | (cy[1] ^ cy[0]));
+  wire star = (cy[5:2] == 4'b0011) & center2 & (~dx[0] | (cy[1] ^ cy[0]));
 
-  // "MALIGAYANG PASKO!": 17 characters, rows 53..57.  M is 5 cells wide (columns 4..8);
-  // the other 16 characters are 3 cells wide at a pitch of 4 starting at column 12 (aligned to 4).
+  // "MALIGAYANG PASKO!": 17 characters, rows 53..57.  M is 5 cells wide (columns 6..10);
+  // the other 16 characters are 3 cells wide at a pitch of 4 starting at column 12.
   wire [4:0] ci   = cx[6:2] - 5'd3;        // 0..15 for columns 12..75
   wire [1:0] ccol = cx[1:0];               // 0..2 (3 is the gap)
   wire [2:0] crow = cy[2:0];               // glyph rows are 53..57 (crow 5, 6, 7, 0, 1)
@@ -123,17 +124,17 @@ module tt_um_XmasTree_MaligayangPasko (
       default: begin gr = 3'b000; mr = 5'b00000; end
     endcase
   end
-  wire [2:0] mcol   = {~cx[2], cx[1:0]};   // columns 4..8 -> 0..4
-  wire       m_area = (cx[6:3] == 4'd0) & cx[2] | (cx == 7'd8);
+  wire [2:0] mcol   = cx[2:0] - 3'd6;       // columns 6..10 -> 0..4
+  wire       m_area = (cx >= 7'd6) & (cx <= 7'd10);
   wire       text   = ground & ((m_area & mr[mcol]) | (~ci[4] & (ccol != 2'd3) & gr[ccol]));
 
   // lights: every fourth cell inside the tree, the colour cycles with the frame count
   wire light = in_tree & ~edge_c & (cx[0] ^ cy[0]) & (cx[1] ^ cy[1]);
   wire [1:0] lc = {cx[2], cy[2]} ^ t[5:4];
 
-  // falling snow: a 4x4 pixel flake in every fourth 8-pixel column, XOR phase (no adder)
+  // falling snow: a 4x4 pixel flake in every fourth 8-pixel column, falling monotonically downward
   wire [3:0] ph    = cx[6:3] ^ {cx[4:3], cx[6:5]};
-  wire       flake = (cx[1:0] == 2'b01) & ~hc[2] & ~vc[2] & ((cy[3:0] ^ ph) == t[5:2]);
+  wire       flake = (cx[1:0] == 2'b01) & ~hc[2] & ~vc[2] & ((cy[3:0] + ph) == t[5:2]);
 
   // ----------------------------------------------------------------- colour
   reg [5:0] rgb;                // {R1 R0 G1 G0 B1 B0}
