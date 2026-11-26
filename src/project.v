@@ -30,6 +30,9 @@ module tt_um_MaligayangPasko (
   wire sky_black = ui_in[2];    // black sky instead of dark blue
   wire text_grn  = ui_in[3];    // greeting in green instead of red
 
+  // ui_in[7:4] are not used: tie them off so that the linter does not warn (no logic is generated)
+  wire _unused = &{ui_in[7:4], 1'b0};
+
   // ---------------------------------------------------------------- timing
   // H: 640 visible, 16 front porch, 96 sync, 48 back porch = 800
   // V: 480 visible, 10 front porch,  2 sync, 33 back porch = 525

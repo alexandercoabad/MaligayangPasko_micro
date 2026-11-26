@@ -7,8 +7,9 @@ This file is used to generate your project datasheet.
 A 640x480 @ 60 Hz VGA picture (25.175 MHz pixel clock, 2 bits per colour channel, TinyVGA Pmod
 pinout) drawn with combinational logic from the pixel counters, no frame buffer. The design is
 for the **micro tile** (`tiles: "micro"`: clk, rst_n, 8 inputs, 8 outputs, about 300 gates or 80
-flip-flops). Hardened with the Tiny Tapeout flow it is 34 flip-flops and about 330 cells (the last hardening run, before the input options were
-added, gave 331 cells at 88.9 % utilisation).
+flip-flops). Hardened with the Tiny Tapeout flow it is 34 flip-flops and 339 cells in total
+(excluding fill and tap cells), at 90.2 % utilisation, with the DRC, the 17 precheck tests and the
+gate-level test all passing.
 
 The picture is an 80 x 60 grid of 8-pixel cells:
 
@@ -23,7 +24,7 @@ The picture is an 80 x 60 grid of 8-pixel cells:
 - **Snow**: 4x4-pixel flakes fall in the night sky, one in every fourth 8-pixel column, each
   column with its own phase, one cell every four frames, wrapping every 128 pixels. The ground
   (rows 52..59) is snow.
-- **Greeting**: **MALIGAYANG PASKO!** in red on the snow: 17 characters of a 3x5-cell font with a
+- **Greeting**: **MALIGAYANG PASKO!** in red (or green, see the inputs) on the snow: 17 characters of a 3x5-cell font with a
   5-cell-wide M, one cell between characters.
 - Nothing is stored: the picture comes from the counters, a tier rule, a star rule, a glyph table
   and a few XORs.
@@ -34,12 +35,9 @@ Inputs (all low, or left unconnected, gives the plain scene):
 |-----|------|------------------|
 | `ui[0]` | PAUSE | freezes the frame counter, and with it the snow, the lights and the star |
 | `ui[1]` | SNOW_OFF | hides the falling snow |
-| `ui[2]` | TEXT_OFF | hides the greeting |
-| `ui[3]` | STAR_OFF | hides the star |
-| `ui[4]` | LIGHTS_OFF | hides the tree lights |
-| `ui[5]` | SKY_BLACK | black sky instead of dark blue |
-| `ui[6]` | TEXT_YELLOW | yellow greeting instead of red |
-| `ui[7]` | LIGHTS_HOLD | lights keep one colour instead of cycling |
+| `ui[2]` | SKY_BLACK | black sky instead of dark blue |
+| `ui[3]` | TEXT_GREEN | greeting in green instead of red |
+| `ui[7:4]` | unused | |
 
 The outputs are registered, so the picture is one clock late relative to the sync pulses.
 
@@ -51,6 +49,7 @@ star, the snow and the greeting in a smaller font.
 
 Connect a TinyVGA PMOD and a VGA monitor, apply a 25.175 MHz clock and release reset.
 A Christmas tree with a blinking star, falling snow and the greeting on the snow should appear.
+Set `ui[1]` high to hide the snow, `ui[2]` for a black sky, `ui[3]` for a green greeting, and `ui[0]` to freeze the animation.
 
 ## External hardware
 
