@@ -14,7 +14,7 @@ GLYPHS = {  # 3x5 cells, one string per row
 M5 = ["#...#", "##.##", "#.#.#", "#...#", "#...#"]    # the M is 5 cells wide, columns 6..10
 TEXT = "MALIGAYANG PASKO!"          # 17 characters, rows 53..57; the other 16 at pitch 4 from column 12
 
-RED, YELLOW, WHITE, CYAN = 0b110000, 0b111100, 0b111111, 0b001111
+RED, GREEN, YELLOW, WHITE, CYAN = 0b110000, 0b001100, 0b111100, 0b111111, 0b001111
 LIGHTS = [RED, YELLOW, WHITE, CYAN]
 
 
@@ -24,8 +24,8 @@ def pack(rgb):
     return (b0 << 6) | (g0 << 5) | (r0 << 4) | (b1 << 2) | (g1 << 1) | r1
 
 
-# ui_in bits: 0 pause (handled in step), the rest are display options, all low = the plain scene
-SNOW_OFF, TEXT_OFF, STAR_OFF, LIGHT_OFF, SKY_BLACK, TEXT_YEL, LIGHT_HOLD = (1 << b for b in range(1, 8))
+# ui_in bits: 0 pause (handled in step), 1..3 display options, all low = the plain scene
+SNOW_OFF, SKY_BLACK, TEXT_GRN = (1 << b for b in range(1, 4))
 
 
 def colour(hc, vc, t, ui=0):
@@ -35,12 +35,12 @@ def colour(hc, vc, t, ui=0):
     if 16 <= cy <= 47:                                        # four tiers of eight rows
         hw = 1 + 4 * ((cy - 16) // 8) + cy % 8
         in_tree, edge = dx <= hw, dx == hw
-    if 12 <= cy <= 15 and not ui & STAR_OFF:                  # small diamond star on rows 12..15
+    if 12 <= cy <= 15:                                        # small diamond star on rows 12..15
         sdy = 0 if cy in (13, 14) else 1
         if dx + sdy <= 1:
             return [0b100000, 0b110000, 0b111100, 0b110100][(t >> 4) & 3]
-    if not ui & LIGHT_OFF and in_tree and not edge and ((cx ^ cy) & 1) and (((cx >> 1) ^ (cy >> 1)) & 1):   # light
-        lc = (((cx >> 2) & 1) << 1 | ((cy >> 2) & 1)) ^ (0 if ui & LIGHT_HOLD else (t >> 4) & 3)
+    if in_tree and not edge and ((cx ^ cy) & 1) and (((cx >> 1) ^ (cy >> 1)) & 1):   # light
+        lc = (((cx >> 2) & 1) << 1 | ((cy >> 2) & 1)) ^ ((t >> 4) & 3)
         return LIGHTS[lc]
     if edge:
         return 0b000100
@@ -49,8 +49,8 @@ def colour(hc, vc, t, ui=0):
     if 48 <= cy <= 51 and dx <= 1:                            # trunk
         return 0b100100
     if cy >= 52:                                              # snow on the ground, with the greeting on it
-        if 53 <= cy <= 57 and not ui & TEXT_OFF:
-            ink = YELLOW if ui & TEXT_YEL else RED
+        if 53 <= cy <= 57:
+            ink = GREEN if ui & TEXT_GRN else RED
             if 6 <= cx <= 10 and M5[cy - 53][cx - 6] == "#":
                 return ink
             o = cx - 12
