@@ -3,7 +3,7 @@
 project:
   title:        "Maligayang Pasko! (Christmas tree in a micro tile)"      # Project title
   author:       "Alexander Co Abad"      # Your name
-  discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
+  discord:      "alexandercoabad_25756"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
   description:  "VGA pixel-art Christmas tree with a blinking star, colour-cycling lights and the greeting MALIGAYANG PASKO!, in a micro tile"      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
   clock_hz:     25175000       # Clock frequency in Hz (or 0 if not applicable)
