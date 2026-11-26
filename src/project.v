@@ -66,8 +66,7 @@ module tt_um_XmasTree_MaligayangPasko (
   wire [6:0] u  = cx - 7'd40;
   wire [5:0] dx = u[6] ? ~u[5:0] : u[5:0];
 
-  // tree: half-width in cells = 1 + 2 * tier + row in tier, tier = cy[5:3] - 2, so the next
-  // tier starts two cells narrower than the last row of the one above (the "skirts")
+  // tree: half-width in cells = 1 + 2 * tier + row in tier, tier = cy[5:3] - 2
   wire [3:0] hw       = {cy[5:3], 1'b0} - 4'd3 + {1'b0, r};
   wire       tree_row = cy[5] ^ cy[4];                   // rows 16..47
   wire       in_tree  = tree_row & (dx <= {2'b00, hw});
@@ -79,15 +78,14 @@ module tt_um_XmasTree_MaligayangPasko (
   // star: a small diamond of cells on rows 12..15 that blinks and cycles through four colours
   wire star = (cy[5:2] == 4'b0011) & (dx[5:1] == 5'd0) & (~dx[0] | (cy[1] ^ cy[0]));
 
-  // "MALIGAYANG PASKO!": 17 characters, rows 53..57.  The M is 5 cells wide (columns 4..8, a
-  // 3-wide M looks like an H); the other 16 characters are 3 cells wide at a pitch of 4 from column 10.
-  wire [6:0] o    = cx - 7'd10;
-  wire [3:0] ci   = o[5:2];                // character 1..16 of the text, 0..15 here
-  wire [1:0] ccol = o[1:0];                // 0..2 (3 is the gap)
+  // "MALIGAYANG PASKO!": 17 characters, rows 53..57.  M is 5 cells wide (columns 4..8);
+  // the other 16 characters are 3 cells wide at a pitch of 4 starting at column 12 (aligned to 4).
+  wire [4:0] ci   = cx[6:2] - 5'd3;        // 0..15 for columns 12..75
+  wire [1:0] ccol = cx[1:0];               // 0..2 (3 is the gap)
   wire [2:0] crow = cy[2:0];               // glyph rows are 53..57 (crow 5, 6, 7, 0, 1)
   reg  [3:0] gid;
   always @* begin
-    case (ci)
+    case (ci[3:0])
       4'd0: gid = 4'd1;  4'd1: gid = 4'd2;  4'd2: gid = 4'd3;  4'd3: gid = 4'd4;  4'd4: gid = 4'd1;
       4'd5: gid = 4'd5;  4'd6: gid = 4'd1;  4'd7: gid = 4'd6;  4'd8: gid = 4'd4;
       4'd10: gid = 4'd7; 4'd11: gid = 4'd1; 4'd12: gid = 4'd8; 4'd13: gid = 4'd9; 4'd14: gid = 4'd10;
@@ -95,46 +93,47 @@ module tt_um_XmasTree_MaligayangPasko (
       default: gid = 4'd15;                // blank
     endcase
   end
+  // Glyphs stored LSB-left (bit 0 = left column) to avoid column subtraction
   reg [14:0] gl;
   always @* begin
     case (gid)
-      4'd1:  gl = 15'b111_101_111_101_101;   // A
-      4'd2:  gl = 15'b100_100_100_100_111;   // L
+      4'd1:  gl = 15'b101_101_111_101_111;   // A
+      4'd2:  gl = 15'b111_001_001_001_001;   // L
       4'd3:  gl = 15'b111_010_010_010_111;   // I
-      4'd4:  gl = 15'b111_100_101_101_111;   // G
-      4'd5:  gl = 15'b101_101_111_010_010;   // Y
-      4'd6:  gl = 15'b111_101_101_101_101;   // N
-      4'd7:  gl = 15'b111_101_111_100_100;   // P
+      4'd4:  gl = 15'b111_101_101_001_111;   // G
+      4'd5:  gl = 15'b010_010_111_101_101;   // Y
+      4'd6:  gl = 15'b101_101_101_101_111;   // N
+      4'd7:  gl = 15'b001_001_111_101_111;   // P
       4'd8:  gl = 15'b111_100_111_001_111;   // S
-      4'd9:  gl = 15'b101_101_110_101_101;   // K
+      4'd9:  gl = 15'b101_101_011_101_101;   // K
       4'd10: gl = 15'b111_101_101_101_111;   // O
-      4'd11: gl = 15'b010_010_010_000_010;   // !
+      4'd11: gl = 15'b010_000_010_010_010;   // !
       default: gl = 15'b000_000_000_000_000;
     endcase
   end
   reg [2:0] gr;
-  reg [4:0] mr;                            // the M, 5 cells wide
+  reg [4:0] mr;                            // M stored LSB-left
   always @* begin
     case (crow)
-      3'd5: begin gr = gl[14:12]; mr = 5'b10001; end  // rows 53, 54, 55
-      3'd6: begin gr = gl[11:9];  mr = 5'b11011; end
-      3'd7: begin gr = gl[8:6];   mr = 5'b10101; end
-      3'd0: begin gr = gl[5:3];   mr = 5'b10001; end  // rows 56, 57
-      3'd1: begin gr = gl[2:0];   mr = 5'b10001; end
+      3'd5: begin gr = gl[2:0];   mr = 5'b10001; end  // row 53
+      3'd6: begin gr = gl[5:3];   mr = 5'b11011; end  // row 54
+      3'd7: begin gr = gl[8:6];   mr = 5'b10101; end  // row 55
+      3'd0: begin gr = gl[11:9];  mr = 5'b10001; end  // row 56
+      3'd1: begin gr = gl[14:12]; mr = 5'b10001; end  // row 57
       default: begin gr = 3'b000; mr = 5'b00000; end
     endcase
   end
-  wire [2:0] mcol = {~cx[2], cx[1:0]};     // columns 4..8 -> 0..4
-  wire m_area = (cx >= 7'd4) & (cx <= 7'd8);
-  wire text = ground & ((m_area & mr[3'd4 - mcol]) | ((o < 7'd64) & (ccol != 2'd3) & gr[2'd2 - ccol]));
+  wire [2:0] mcol   = {~cx[2], cx[1:0]};   // columns 4..8 -> 0..4
+  wire       m_area = (cx[6:3] == 4'd0) & cx[2] | (cx == 7'd8);
+  wire       text   = ground & ((m_area & mr[mcol]) | (~ci[4] & (ccol != 2'd3) & gr[ccol]));
 
   // lights: every fourth cell inside the tree, the colour cycles with the frame count
   wire light = in_tree & ~edge_c & (cx[0] ^ cy[0]) & (cx[1] ^ cy[1]);
   wire [1:0] lc = {cx[2], cy[2]} ^ t[5:4];
 
-  // falling snow: a 4x4 pixel flake in every fourth 8-pixel column, each column with its own phase
+  // falling snow: a 4x4 pixel flake in every fourth 8-pixel column, XOR phase (no adder)
   wire [3:0] ph    = cx[6:3] ^ {cx[4:3], cx[6:5]};
-  wire       flake = (cx[1:0] == 2'b01) & ~hc[2] & ~vc[2] & ((vc[6:3] + ph) == t[5:2]);
+  wire       flake = (cx[1:0] == 2'b01) & ~hc[2] & ~vc[2] & ((cy[3:0] ^ ph) == t[5:2]);
 
   // ----------------------------------------------------------------- colour
   reg [5:0] rgb;                // {R1 R0 G1 G0 B1 B0}
