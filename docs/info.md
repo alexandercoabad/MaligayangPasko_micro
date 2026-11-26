@@ -7,8 +7,8 @@ This file is used to generate your project datasheet.
 A 640x480 @ 60 Hz VGA picture (25.175 MHz pixel clock, 2 bits per colour channel, TinyVGA Pmod
 pinout) drawn with combinational logic from the pixel counters, no frame buffer. The design is
 for the **micro tile** (`tiles: "micro"`: clk, rst_n, 8 inputs, 8 outputs, about 300 gates or 80
-flip-flops). Hardened with the Tiny Tapeout flow it is 34 flip-flops and 331 cells in total
-(excluding fill and tap cells), at 88.9 % utilisation.
+flip-flops). Hardened with the Tiny Tapeout flow it is 34 flip-flops and about 330 cells (the last hardening run, before the input options were
+added, gave 331 cells at 88.9 % utilisation).
 
 The picture is an 80 x 60 grid of 8-pixel cells:
 
@@ -28,7 +28,19 @@ The picture is an 80 x 60 grid of 8-pixel cells:
 - Nothing is stored: the picture comes from the counters, a tier rule, a star rule, a glyph table
   and a few XORs.
 
-`ui_in[0]` (PAUSE) freezes the frame counter, and with it the snow, the lights and the star.
+Inputs (all low, or left unconnected, gives the plain scene):
+
+| Pin | Name | Effect when high |
+|-----|------|------------------|
+| `ui[0]` | PAUSE | freezes the frame counter, and with it the snow, the lights and the star |
+| `ui[1]` | SNOW_OFF | hides the falling snow |
+| `ui[2]` | TEXT_OFF | hides the greeting |
+| `ui[3]` | STAR_OFF | hides the star |
+| `ui[4]` | LIGHTS_OFF | hides the tree lights |
+| `ui[5]` | SKY_BLACK | black sky instead of dark blue |
+| `ui[6]` | TEXT_YELLOW | yellow greeting instead of red |
+| `ui[7]` | LIGHTS_HOLD | lights keep one colour instead of cycling |
+
 The outputs are registered, so the picture is one clock late relative to the sync pulses.
 
 The earlier 1x1 version of this project (full scene, `MERRY CHRISTMAS!` and `MALIGAYANG PASKO!` in an

@@ -22,13 +22,13 @@ project:
 pinout:
   # Inputs
   ui[0]: "PAUSE (freeze snow, lights and star)"
-  ui[1]: ""
-  ui[2]: ""
-  ui[3]: ""
-  ui[4]: ""
-  ui[5]: ""
-  ui[6]: ""
-  ui[7]: ""
+  ui[1]: "SNOW_OFF (hide the falling snow)"
+  ui[2]: "TEXT_OFF (hide the greeting)"
+  ui[3]: "STAR_OFF (hide the star)"
+  ui[4]: "LIGHTS_OFF (hide the tree lights)"
+  ui[5]: "SKY_BLACK (black sky instead of dark blue)"
+  ui[6]: "TEXT_YELLOW (yellow greeting instead of red)"
+  ui[7]: "LIGHTS_HOLD (lights keep one colour)"
 
   # Outputs
   uo[0]: "R1"
