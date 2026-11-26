@@ -66,11 +66,11 @@ module tt_um_XmasTree_MaligayangPasko (
   wire [6:0] u  = cx - 7'd40;
   wire [5:0] dx = u[6] ? ~u[5:0] : u[5:0];
 
-  // tree: half-width in cells = 1 + 2 * tier + row in tier, tier = cy[5:3] - 2
-  wire [3:0] hw       = {cy[5:3], 1'b0} - 4'd3 + {1'b0, r};
+  // tree: half-width in cells = 1 + 4 * tier + row in tier, tier = cy[5:3] - 2
+  wire [4:0] hw       = {cy[5:3], 2'b00} - 5'd7 + {2'b00, r};
   wire       tree_row = cy[5] ^ cy[4];                   // rows 16..47
-  wire       in_tree  = tree_row & (dx <= {2'b00, hw});
-  wire       edge_c   = in_tree & (dx == {2'b00, hw});
+  wire       in_tree  = tree_row & (dx <= {1'b0, hw});
+  wire       edge_c   = in_tree & (dx == {1'b0, hw});
 
   wire center2 = (dx[5:1] == 5'd0);                      // columns 38..41
   wire trunk   = (cy[5:2] == 4'b1100) & center2;         // rows 48..51, four cells wide
