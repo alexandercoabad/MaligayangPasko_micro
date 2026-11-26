@@ -1,4 +1,4 @@
-"""Cycle-exact reference model of tt_um_MaligayangPasko, written from the
+"""Cycle-exact reference model of tt_um_XmasTree_MaligayangPasko, written from the
 description of the picture (cell grid, tier rule, star shape, glyphs), not from the RTL expressions."""
 
 H_TOTAL, V_TOTAL = 800, 525
@@ -24,23 +24,19 @@ def pack(rgb):
     return (b0 << 6) | (g0 << 5) | (r0 << 4) | (b1 << 2) | (g1 << 1) | r1
 
 
-# ui_in bits: 0 pause (handled in step), the rest are display options, all low = the plain scene
-SNOW_OFF, TEXT_OFF, STAR_OFF, LIGHT_OFF, SKY_BLACK, TEXT_YEL, LIGHT_HOLD = (1 << b for b in range(1, 8))
-
-
-def colour(hc, vc, t, ui=0):
+def colour(hc, vc, t):
     cx, cy = hc // 8, vc // 8                                 # 80 x 60 cells of 8 pixels
     dx = (39 - cx) if cx < 40 else (cx - 40)                  # distance from the centre line
     in_tree = edge = False
     if 16 <= cy <= 47:                                        # four tiers of eight rows
         hw = 1 + 4 * ((cy - 16) // 8) + cy % 8
         in_tree, edge = dx <= hw, dx == hw
-    if 12 <= cy <= 15 and not ui & STAR_OFF:                  # small diamond star on rows 12..15
+    if 12 <= cy <= 15:                                        # small diamond star on rows 12..15
         sdy = 0 if cy in (13, 14) else 1
         if dx + sdy <= 1:
             return [0b100000, 0b110000, 0b111100, 0b110100][(t >> 4) & 3]
-    if not ui & LIGHT_OFF and in_tree and not edge and ((cx ^ cy) & 1) and (((cx >> 1) ^ (cy >> 1)) & 1):   # light
-        lc = (((cx >> 2) & 1) << 1 | ((cy >> 2) & 1)) ^ (0 if ui & LIGHT_HOLD else (t >> 4) & 3)
+    if in_tree and not edge and ((cx ^ cy) & 1) and (((cx >> 1) ^ (cy >> 1)) & 1):   # light
+        lc = (((cx >> 2) & 1) << 1 | ((cy >> 2) & 1)) ^ ((t >> 4) & 3)
         return LIGHTS[lc]
     if edge:
         return 0b000100
@@ -49,20 +45,19 @@ def colour(hc, vc, t, ui=0):
     if 48 <= cy <= 51 and dx <= 1:                            # trunk
         return 0b100100
     if cy >= 52:                                              # snow on the ground, with the greeting on it
-        if 53 <= cy <= 57 and not ui & TEXT_OFF:
-            ink = YELLOW if ui & TEXT_YEL else RED
+        if 53 <= cy <= 57:
             if 6 <= cx <= 10 and M5[cy - 53][cx - 6] == "#":
-                return ink
+                return RED
             o = cx - 12
             if 0 <= o < 64 and o % 4 < 3:
                 ch = TEXT[1 + o // 4]
                 if ch != " " and GLYPHS[ch][cy - 53][o % 4] == "#":
-                    return ink
+                    return RED
         return WHITE
     ph = ((cx >> 3) & 0xF) ^ ((((cx >> 3) & 3) << 2) | ((cx >> 5) & 3))
-    if not ui & SNOW_OFF and (cx & 3) == 1 and not (hc & 4) and not (vc & 4) and ((((cy & 0xF) + ph) & 0xF) == ((t >> 2) & 0xF)):
+    if (cx & 3) == 1 and not (hc & 4) and not (vc & 4) and ((((cy & 0xF) + ph) & 0xF) == ((t >> 2) & 0xF)):
         return WHITE
-    return 0 if ui & SKY_BLACK else 0b000001
+    return 0b000001
 
 
 class Model:
@@ -75,7 +70,7 @@ class Model:
         active = hc < 640 and vc < 480
         hs_n = 0 if 656 <= hc < 752 else 1
         vs_n = 0 if vc in (490, 491) else 1
-        out = pack(colour(hc, vc, t, ui)) if active else 0
+        out = pack(colour(hc, vc, t)) if active else 0
         out |= (hs_n << 7) | (vs_n << 3)
         if hc == H_TOTAL - 1:
             self.hc = 0
