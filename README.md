@@ -8,7 +8,11 @@ A 640x480 VGA pixel-art Christmas tree (blinking four-colour star, colour-cyclin
 - [src/project.v](src/project.v): the design, one file (34 flip-flops, about 260 gates)
 - `src/config.json`, `src/no_synth.cells`: the micro-tile hardening settings (from the Pettit micro project, which fits the same tile)
 
-![Preview](docs/preview.png)
+## VGA Playground
+https://vga-playground.com/?repo=https://github.com/alexandercoabad/MaligayangPasko_micro
+
+<img width="726" height="592" alt="Screenshot 2026-11-26 at 8 37 40 AM" src="https://github.com/user-attachments/assets/038d1ac4-4001-4011-b7f3-dca3e095231f" />
+
 
 ## Simulation
 
