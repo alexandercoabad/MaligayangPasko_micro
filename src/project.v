@@ -76,10 +76,10 @@ module tt_um_MaligayangPasko (
 
   // tree: half-width in cells = 1 + 4 * tier + row in tier, tier = cy[5:3] - 2
   wire [4:0] hw       = {cy[5:3], 2'b00} - 5'd7 + {2'b00, r};
-  wire [5:0] tdiff    = {1'b0, hw} - dx;
+  wire [6:0] tdiff    = {2'b00, hw} - {1'b0, dx};
   wire       tree_row = cy[5] ^ cy[4];                   // rows 16..47
-  wire       in_tree  = tree_row & ~tdiff[5];
-  wire       edge_c   = in_tree & (tdiff[4:0] == 5'd0);
+  wire       in_tree  = tree_row & ~tdiff[6];
+  wire       edge_c   = in_tree & (tdiff[5:0] == 6'd0);
 
   wire center2 = (dx[5:1] == 5'd0);                      // columns 38..41
   wire trunk   = (cy[5:2] == 4'b1100) & center2;         // rows 48..51, four cells wide
