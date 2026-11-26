@@ -29,7 +29,7 @@ def colour(hc, vc, t):
     dx = (39 - cx) if cx < 40 else (cx - 40)                  # distance from the centre line
     in_tree = edge = False
     if 16 <= cy <= 47:                                        # four tiers of eight rows
-        hw = 1 + 2 * ((cy - 16) // 8) + cy % 8
+        hw = 1 + 4 * ((cy - 16) // 8) + cy % 8
         in_tree, edge = dx <= hw, dx == hw
     if 12 <= cy <= 15:                                        # small diamond star on rows 12..15
         sdy = 0 if cy in (13, 14) else 1
