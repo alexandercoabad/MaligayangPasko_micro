@@ -12,7 +12,7 @@
  *     with darker edges, striped needles and colour-cycling lights, a trunk
  *     and a snow-covered ground
  *   - snow falling in the night sky
- *   - "MALIGAYANG PASKO!" in red on the snow, a 3x5-cell font of 12 glyphs
+ *   - "MALIGAYANG PASKO!" in red (or green) on the snow, a 3x5-cell font of 12 glyphs
  */
 
 `default_nettype none
@@ -25,14 +25,10 @@ module tt_um_MaligayangPasko (
 );
 
   // inputs: all low (or unconnected pulled low) is the plain scene
-  wire pause      = ui_in[0];   // freeze the animation (snow, lights and star)
-  wire snow_off   = ui_in[1];   // hide the falling snow
-  wire text_off   = ui_in[2];   // hide the greeting
-  wire star_off   = ui_in[3];   // hide the star
-  wire light_off  = ui_in[4];   // hide the tree lights
-  wire sky_black  = ui_in[5];   // black sky instead of dark blue
-  wire text_yel   = ui_in[6];   // greeting in yellow instead of red
-  wire light_hold = ui_in[7];   // lights keep one colour instead of cycling
+  wire pause     = ui_in[0];    // freeze the animation (snow, lights and star)
+  wire snow_off  = ui_in[1];    // hide the falling snow
+  wire sky_black = ui_in[2];    // black sky instead of dark blue
+  wire text_grn  = ui_in[3];    // greeting in green instead of red
 
   // ---------------------------------------------------------------- timing
   // H: 640 visible, 16 front porch, 96 sync, 48 back porch = 800
@@ -86,7 +82,7 @@ module tt_um_MaligayangPasko (
   wire ground  = cy[5] & cy[4] & (cy[3] | cy[2]);        // rows 52..59
 
   // star: a small diamond of cells on rows 12..15 that blinks and cycles through four colours
-  wire star = ~star_off & (cy[5:2] == 4'b0011) & center2 & (~dx[0] | (cy[1] ^ cy[0]));
+  wire star = (cy[5:2] == 4'b0011) & center2 & (~dx[0] | (cy[1] ^ cy[0]));
 
   // "MALIGAYANG PASKO!": 17 characters, rows 53..57.  M is 5 cells wide (columns 6..10);
   // the other 16 characters are 3 cells wide at a pitch of 4 starting at column 12.
@@ -135,11 +131,11 @@ module tt_um_MaligayangPasko (
   end
   wire [6:0] mx     = cx - 7'd6;
   wire       m_area = (mx[6:3] == 4'd0) & (~mx[2] | (~mx[1] & ~mx[0]));
-  wire       text   = ~text_off & ground & ((m_area & mr[mx[2:0]]) | (~ci[4] & (ccol != 2'd3) & gr[ccol]));
+  wire       text   = ground & ((m_area & mr[mx[2:0]]) | (~ci[4] & (ccol != 2'd3) & gr[ccol]));
 
   // lights: every fourth cell inside the tree, the colour cycles with the frame count
-  wire light = ~light_off & in_tree & ~edge_c & (&(cx[1:0] ^ cy[1:0]));
-  wire [1:0] lc = {cx[2], cy[2]} ^ (light_hold ? 2'd0 : t[5:4]);
+  wire light = in_tree & ~edge_c & (&(cx[1:0] ^ cy[1:0]));
+  wire [1:0] lc = {cx[2], cy[2]} ^ t[5:4];
 
   // falling snow: a 4x4 pixel flake in every fourth 8-pixel column, falling monotonically downward
   wire [3:0] ph    = cx[6:3] ^ {cx[4:3], cx[6:5]};
@@ -162,7 +158,7 @@ module tt_um_MaligayangPasko (
     else if (edge_c)        rgb = 6'b00_01_00;
     else if (in_tree)       rgb = cy[0] ? 6'b00_11_00 : 6'b00_10_00;
     else if (trunk)         rgb = 6'b10_01_00;
-    else if (text)          rgb = {2'b11, {2{text_yel}}, 2'b00};
+    else if (text)          rgb = {{2{~text_grn}}, {2{text_grn}}, 2'b00};
     else if (ground | snow) rgb = 6'b11_11_11;
     else                    rgb = {5'b00000, ~sky_black};
   end
