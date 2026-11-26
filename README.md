@@ -9,6 +9,13 @@ A 640x480 VGA pixel-art Christmas tree (blinking four-colour star, colour-cyclin
 - `src/config.json`, `src/no_synth.cells`: the micro-tile hardening settings (from the Pettit micro project, which fits the same tile)
 
 ## VGA Playground
+
+
+
+https://github.com/user-attachments/assets/e008854e-62fc-4536-b057-7bfacdb8a102
+
+
+
 https://vga-playground.com/?repo=https://github.com/alexandercoabad/MaligayangPasko_micro
 
 <img width="726" height="592" alt="Screenshot 2026-11-26 at 8 37 40 AM" src="https://github.com/user-attachments/assets/038d1ac4-4001-4011-b7f3-dca3e095231f" />
