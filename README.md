@@ -20,6 +20,9 @@ https://vga-playground.com/?repo=https://github.com/alexandercoabad/MaligayangPa
 
 <img width="726" height="592" alt="Screenshot 2026-11-26 at 8 37 40 AM" src="https://github.com/user-attachments/assets/038d1ac4-4001-4011-b7f3-dca3e095231f" />
 
+#3D viewer https://gds-viewer.tinytapeout.com/?model=https://alexandercoabad.github.io/MaligayangPasko_micro/tinytapeout.oas&pdk=sky130A
+<img width="1048" height="663" alt="Screenshot 2026-11-26 at 9 26 37 AM" src="https://github.com/user-attachments/assets/49050208-c868-4f85-a79f-86cb0b5df5d9" />
+
 
 ## Simulation
 
